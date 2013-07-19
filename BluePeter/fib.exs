@@ -4,24 +4,52 @@ defmodule Sequence do
   def fib(1), do: 1
   def fib(n), do: fib(n-1) + fib(n-2)
 
-end
+  # Regular map 
+  def map([], _fun), do: []
+  def map([ head | tail ], fun), do: [ fun.(head) | map(tail, fun)]
 
-defmodule Parallel do
-  def map(collection, fun) do
-    me = self
+  # Parallel map
+  def pmap(collection, fun) do
+    collection |> spawn_children(fun) |> collect_results
+    #        values    --->          pids    ---->        values
+  end
 
-    collection
-    |> Enum.map(fn (elem) ->
-         spawn_link fn -> (me <- { self, fun.(elem) }) end
-       end)
-    |> Enum.map(fn (pid) ->
-         receive do { ^pid, result } -> result end
-       end)
+  defp spawn_children(collection, fun), do: collection |> map(spawn_child(&1, fun))
+
+  def spawn_child(item, fun),   do: spawn(__MODULE__, :child, [item, fun, self])
+
+  def child(item, fun, parent), do: parent <- { self, fun.(item) }
+
+  defp collect_results(pids),   do: pids |> map(collect_result_for_pid(&1))
+
+  defp collect_result_for_pid(pid) do
+     receive do
+      { ^pid, value } -> value
+    end
   end
 end
 
 
-IO.puts Sequence.fib(10)
-IO.puts Sequence.fib(20)
+#####################################################
 
-40..30 |> Parallel.map(function(Sequence.fib/1)) |> IO.inspect
+ExUnit.start
+
+defmodule MyTest do
+  use ExUnit.Case
+
+  import Sequence
+
+  test "basic fib works" do
+    assert fib(10) == 89
+    assert fib(30) == 1346269
+  end
+
+  test "sequential map works" do
+    assert map([0, 1,2,3,4,5], fib(&1)) == [1, 1, 2, 3, 5, 8]
+  end
+
+  test "parallel map works" do
+    assert pmap([0, 1,2,3,4,5], fib(&1)) == [1, 1, 2, 3, 5, 8]
+  end
+
+end
