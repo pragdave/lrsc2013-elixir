@@ -1,6 +1,6 @@
 defmodule Sequence do 
 
-  def fib(0), do: 1
+  def fib(0), do: 0
   def fib(1), do: 1
   def fib(n), do: fib(n-1) + fib(n-2)
 
@@ -40,16 +40,16 @@ defmodule MyTest do
   import Sequence
 
   test "basic fib works" do
-    assert fib(10) == 89
-    assert fib(30) == 1346269
+    assert fib(10) == 55
+    assert fib(30) == 832040
   end
 
   test "sequential map works" do
-    assert map([0, 1,2,3,4,5], fib(&1)) == [1, 1, 2, 3, 5, 8]
+    assert map([0, 1,2,3,4,5], fib(&1)) == [0, 1, 1, 2, 3, 5]
   end
 
   test "parallel map works" do
-    assert pmap([0, 1,2,3,4,5], fib(&1)) == [1, 1, 2, 3, 5, 8]
+    assert pmap([0, 1,2,3,4,5], fib(&1)) == [0, 1, 1, 2, 3, 5]
   end
 
 end
